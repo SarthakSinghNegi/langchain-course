@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LangChain Mastery - Interactive Learning Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg-primary: #06060a;
+    --bg-secondary: #0d0d14;
+    --bg-card: #111119;
+    --bg-card-hover: #16161f;
+    --bg-code: #0a0a12;
+    --border: #1e1e2e;
+    --border-glow: #2d2d44;
+    --text-primary: #e4e4ef;
+    --text-secondary: #8888a4;
+    --text-muted: #55556a;
+    --accent-1: #7c5cfc;
+    --accent-2: #00d4aa;
+    --accent-3: #ff6b9d;
+    --accent-4: #ffa64d;
+    --accent-5: #4dc9f6;
+    --gradient-1: linear-gradient(135deg, #7c5cfc 0%, #00d4aa 100%);
+    --gradient-2: linear-gradient(135deg, #ff6b9d 0%, #ffa64d 100%);
+    --gradient-3: linear-gradient(135deg, #4dc9f6 0%, #7c5cfc 100%);
+    --gradient-hero: linear-gradient(160deg, #0d0d14 0%, #1a0a2e 30%, #0d1a1a 60%, #0d0d14 100%);
+    --shadow-glow: 0 0 40px rgba(124, 92, 252, 0.08);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--accent-1) var(--bg-primary); }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--accent-1); border-radius: 3px; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ─── Ambient Background ─── */
+  .ambient-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 800px 600px at 20% 20%, rgba(124,92,252,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 500px at 80% 60%, rgba(0,212,170,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 400px at 50% 90%, rgba(255,107,157,0.03) 0%, transparent 70%);
+  }
+
+  /* ─── Navbar ─── */
+  .navbar {
+    position: fixed; top: 0; width: 100%; z-index: 1000;
+    background: rgba(6,6,10,0.75); backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s ease;
+  }
+  .navbar.scrolled { box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
+  .nav-inner {
+    max-width: 1400px; margin: 0 auto; padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between; height: 64px;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 800; font-size: 1.1rem; color: var(--text-primary);
+    text-decoration: none;
+  }
+  .nav-logo .logo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--gradient-1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .nav-links { display: flex; gap: 6px; }
+  .nav-links a {
+    color: var(--text-secondary); text-decoration: none;
+    padding: 8px 16px; border-radius: var(--radius-xs);
+    font-size: 0.85rem; font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  .nav-links a:hover, .nav-links a.active {
+    color: var(--text-primary); background: rgba(124,92,252,0.1);
+  }
+  .nav-progress-wrap {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
+    background: rgba(124,92,252,0.1);
+  }
+  .nav-progress {
+    height: 100%; width: 0%; border-radius: 2px;
+    background: var(--gradient-1);
+    transition: width 0.1s linear;
+  }
+
+  /* ─── Hero ─── */
+  .hero {
+    position: relative; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--gradient-hero);
+    overflow: hidden; padding: 120px 40px 80px;
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(124,92,252,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,92,252,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 100%);
+  }
+  .hero-content { position: relative; z-index: 2; text-align: center; max-width: 900px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 18px; border-radius: 100px;
+    background: rgba(124,92,252,0.1); border: 1px solid rgba(124,92,252,0.2);
+    font-size: 0.8rem; font-weight: 600; color: var(--accent-1);
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+  .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2); animation: pulse-dot 2s infinite; }
+  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .hero h1 {
+    font-size: clamp(2.8rem, 6vw, 4.5rem); font-weight: 900;
+    line-height: 1.1; letter-spacing: -0.03em;
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+  .hero h1 .gradient-text {
+    background: var(--gradient-1); -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero p {
+    font-size: 1.15rem; color: var(--text-secondary);
+    max-width: 600px; margin: 24px auto 0; line-height: 1.8;
+    animation: fadeUp 0.6s ease 0.35s both;
+  }
+  .hero-stats {
+    display: flex; justify-content: center; gap: 48px; margin-top: 52px;
+    animation: fadeUp 0.6s ease 0.5s both;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .value {
+    font-size: 2.2rem; font-weight: 800;
+    background: var(--gradient-1); -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero-stat .label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+  .hero-orbs {
+    position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  }
+  .orb {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35;
+    animation: float 20s ease-in-out infinite;
+  }
+  .orb-1 { width: 400px; height: 400px; background: var(--accent-1); top: 10%; left: -5%; animation-delay: 0s; }
+  .orb-2 { width: 350px; height: 350px; background: var(--accent-2); bottom: 10%; right: -5%; animation-delay: -7s; }
+  .orb-3 { width: 250px; height: 250px; background: var(--accent-3); top: 50%; left: 50%; animation-delay: -14s; }
+  @keyframes float {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(30px,-30px) scale(1.05); }
+    66% { transform: translate(-20px,20px) scale(0.95); }
+  }
+
+  /* ─── Main Content ─── */
+  .main-content {
+    position: relative; z-index: 1;
+    max-width: 1400px; margin: 0 auto; padding: 0 40px 120px;
+  }
+
+  /* ─── Section Titles ─── */
+  .section-header {
+    text-align: center; margin-bottom: 64px;
+    padding-top: 100px;
+  }
+  .section-number {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--accent-1);
+    margin-bottom: 12px;
+  }
+  .section-header h2 {
+    font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em;
+  }
+  .section-header p {
+    color: var(--text-secondary); max-width: 550px; margin: 12px auto 0;
+    font-size: 1rem;
+  }
+
+  /* ─── Cards Grid ─── */
+  .cards-grid {
+    display: grid; gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 32px;
+    transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--gradient-1); opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .card:hover {
+    border-color: var(--border-glow); transform: translateY(-4px);
+    box-shadow: var(--shadow-glow);
+  }
+  .card:hover::before { opacity: 1; }
+
+  .card-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 20px;
+  }
+  .card-icon.purple { background: rgba(124,92,252,0.12); }
+  .card-icon.green { background: rgba(0,212,170,0.12); }
+  .card-icon.pink { background: rgba(255,107,157,0.12); }
+  .card-icon.orange { background: rgba(255,166,77,0.12); }
+  .card-icon.blue { background: rgba(77,201,246,0.12); }
+
+  .card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 10px; }
+  .card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; }
+
+  /* ─── Code Blocks ─── */
+  .code-block {
+    background: var(--bg-code); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); overflow: hidden;
+    margin: 16px 0;
+  }
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+  }
+  .code-header .file-name {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+    color: var(--text-muted); display: flex; align-items: center; gap: 8px;
+  }
+  .code-header .file-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .code-header .copy-btn {
+    background: none; border: 1px solid var(--border); color: var(--text-muted);
+    padding: 4px 12px; border-radius: var(--radius-xs); cursor: pointer;
+    font-size: 0.72rem; font-family: 'Inter', sans-serif; font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  .code-header .copy-btn:hover { border-color: var(--accent-1); color: var(--accent-1); }
+  .code-header .copy-btn.copied { border-color: var(--accent-2); color: var(--accent-2); }
+  pre {
+    padding: 20px; overflow-x: auto; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem; line-height: 1.8; color: var(--text-primary);
+  }
+  .kw { color: #c792ea; } .fn { color: #82aaff; } .str { color: #c3e88d; }
+  .cm { color: #546e7a; font-style: italic; } .num { color: #f78c6c; }
+  .op { color: #89ddff; } .var { color: #f07178; } .cls { color: #ffcb6b; }
+  .dec { color: #c792ea; } .par { color: #89ddff; } .imp { color: #89ddff; }
+
+  /* ─── Interactive Tabs ─── */
+  .tabs-container { margin-top: 40px; }
+  .tabs-header {
+    display: flex; gap: 4px; padding: 4px;
+    background: var(--bg-secondary); border-radius: var(--radius-sm);
+    border: 1px solid var(--border); margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    padding: 10px 22px; border: none; border-radius: 8px;
+    background: transparent; color: var(--text-secondary);
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.25s ease; white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text-primary); }
+  .tab-btn.active {
+    background: var(--accent-1); color: white;
+    box-shadow: 0 2px 12px rgba(124,92,252,0.3);
+  }
+  .tab-content { display: none; animation: fadeIn 0.3s ease; }
+  .tab-content.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ─── Flow Diagram ─── */
+  .flow-diagram {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; padding: 40px 20px; flex-wrap: wrap;
+  }
+  .flow-node {
+    padding: 16px 28px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--bg-card);
+    text-align: center; min-width: 140px;
+    transition: all 0.3s ease; cursor: default;
+  }
+  .flow-node:hover {
+    transform: scale(1.05); border-color: var(--accent-1);
+    box-shadow: 0 0 20px rgba(124,92,252,0.15);
+  }
+  .flow-node .node-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .flow-node .node-value { font-weight: 700; font-size: 0.95rem; }
+  .flow-arrow {
+    font-size: 1.5rem; color: var(--accent-1); padding: 0 12px;
+    animation: arrowPulse 2s ease-in-out infinite;
+  }
+  @keyframes arrowPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ─── Temperature Visualizer ─── */
+  .temp-visualizer { padding: 32px; }
+  .temp-slider-wrap { margin: 32px 0; text-align: center; }
+  .temp-slider-wrap label { font-weight: 600; font-size: 0.9rem; color: var(--text-secondary); }
+  .temp-value-display {
+    font-size: 3.5rem; font-weight: 900; margin: 16px 0;
+    background: var(--gradient-1); -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; background-clip: text;
+    transition: all 0.2s ease;
+  }
+  input[type="range"] {
+    -webkit-appearance: none; width: 100%; max-width: 500px; height: 6px;
+    border-radius: 3px; outline: none; margin: 16px 0;
+    background: linear-gradient(to right, var(--accent-2), var(--accent-1), var(--accent-3));
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+    background: white; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 3px var(--accent-1);
+  }
+  .temp-examples {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin-top: 24px;
+  }
+  .temp-example {
+    padding: 20px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--bg-card); text-align: center;
+    transition: all 0.3s ease; cursor: default;
+  }
+  .temp-example.highlighted { border-color: var(--accent-1); box-shadow: 0 0 20px rgba(124,92,252,0.1); }
+  .temp-example .temp-label { font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; }
+  .temp-example .temp-desc { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
+  .temp-example .temp-use { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; }
+  .temp-output {
+    margin-top: 24px; padding: 24px; border-radius: var(--radius-sm);
+    background: var(--bg-code); border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+    color: var(--text-secondary); min-height: 60px;
+    transition: all 0.3s ease;
+  }
+
+  /* ─── Accordion ─── */
+  .accordion { display: flex; flex-direction: column; gap: 8px; }
+  .accordion-item {
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    overflow: hidden; background: var(--bg-card);
+    transition: border-color 0.3s ease;
+  }
+  .accordion-item.open { border-color: var(--border-glow); }
+  .accordion-trigger {
+    width: 100%; padding: 20px 24px; background: none; border: none;
+    color: var(--text-primary); font-family: 'Inter', sans-serif;
+    font-size: 0.95rem; font-weight: 600; text-align: left;
+    cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+    transition: background 0.2s ease;
+  }
+  .accordion-trigger:hover { background: rgba(255,255,255,0.02); }
+  .accordion-trigger .arrow {
+    transition: transform 0.3s ease; font-size: 0.8rem; color: var(--text-muted);
+  }
+  .accordion-item.open .accordion-trigger .arrow { transform: rotate(180deg); }
+  .accordion-body {
+    max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  .accordion-item.open .accordion-body { max-height: 800px; }
+  .accordion-content { padding: 0 24px 24px; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8; }
+
+  /* ─── Comparison Table ─── */
+  .comparison-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    overflow: hidden; margin: 24px 0;
+  }
+  .comparison-table th {
+    background: rgba(124,92,252,0.08); padding: 14px 20px;
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--accent-1);
+    text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .comparison-table td {
+    padding: 14px 20px; font-size: 0.88rem; color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table tr:hover td { background: rgba(124,92,252,0.03); }
+
+  /* ─── Insight Callout ─── */
+  .callout {
+    padding: 24px 28px; border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent-1);
+    background: rgba(124,92,252,0.04); margin: 24px 0;
+  }
+  .callout.green { border-left-color: var(--accent-2); background: rgba(0,212,170,0.04); }
+  .callout.pink { border-left-color: var(--accent-3); background: rgba(255,107,157,0.04); }
+  .callout .callout-title {
+    font-weight: 700; font-size: 0.85rem; margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .callout p { color: var(--text-secondary); font-size: 0.9rem; }
+
+  /* ─── Env Var Interactive ─── */
+  .env-visual {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    align-items: start; margin-top: 24px;
+  }
+  .env-file {
+    background: var(--bg-code); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); overflow: hidden;
+  }
+  .env-file-header {
+    padding: 12px 16px; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem; color: var(--text-muted);
+    border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .env-line {
+    padding: 6px 16px; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem; cursor: pointer; transition: background 0.2s ease;
+    display: flex; gap: 4px;
+  }
+  .env-line:hover { background: rgba(124,92,252,0.06); }
+  .env-line.active { background: rgba(124,92,252,0.1); border-left: 2px solid var(--accent-1); }
+  .env-key { color: var(--accent-5); }
+  .env-val { color: var(--str); }
+  .env-description {
+    padding: 28px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .env-description h4 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .env-description p { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.7; }
+  .env-tag {
+    display: inline-block; padding: 3px 10px; border-radius: 100px;
+    font-size: 0.7rem; font-weight: 600; margin-top: 12px;
+  }
+  .env-tag.required { background: rgba(255,107,157,0.15); color: var(--accent-3); }
+  .env-tag.optional { background: rgba(0,212,170,0.15); color: var(--accent-2); }
+
+  /* ─── Timeline ─── */
+  .timeline { position: relative; padding: 20px 0; }
+  .timeline::before {
+    content: ''; position: absolute; left: 24px; top: 0; bottom: 0;
+    width: 2px; background: linear-gradient(to bottom, var(--accent-1), var(--accent-2), var(--accent-3));
+    border-radius: 2px;
+  }
+  .timeline-item {
+    position: relative; padding-left: 64px; margin-bottom: 36px;
+    opacity: 0; transform: translateX(-20px);
+    animation: slideInTimeline 0.5s ease forwards;
+  }
+  .timeline-item:nth-child(1) { animation-delay: 0.1s; }
+  .timeline-item:nth-child(2) { animation-delay: 0.2s; }
+  .timeline-item:nth-child(3) { animation-delay: 0.3s; }
+  .timeline-item:nth-child(4) { animation-delay: 0.4s; }
+  .timeline-item:nth-child(5) { animation-delay: 0.5s; }
+  .timeline-item:nth-child(6) { animation-delay: 0.6s; }
+  @keyframes slideInTimeline { to { opacity: 1; transform: translateX(0); } }
+
+  .timeline-dot {
+    position: absolute; left: 16px; top: 4px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--bg-primary); border: 3px solid var(--accent-1);
+    z-index: 1;
+  }
+  .timeline-item:nth-child(even) .timeline-dot { border-color: var(--accent-2); }
+  .timeline-item h4 { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+  .timeline-item p { color: var(--text-secondary); font-size: 0.88rem; }
+  .timeline-tag {
+    display: inline-block; padding: 2px 10px; border-radius: 100px;
+    font-size: 0.7rem; font-weight: 600; margin-top: 8px;
+    background: rgba(124,92,252,0.12); color: var(--accent-1);
+  }
+
+  /* ─── Quiz Section ─── */
+  .quiz-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 36px; margin-bottom: 20px;
+    transition: all 0.3s ease;
+  }
+  .quiz-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+  .quiz-card h4 .q-num {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(124,92,252,0.12); color: var(--accent-1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 800;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-option {
+    padding: 14px 20px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); cursor: pointer;
+    font-size: 0.88rem; color: var(--text-secondary);
+    transition: all 0.25s ease; display: flex; align-items: center; gap: 12px;
+  }
+  .quiz-option:hover { border-color: var(--border-glow); background: rgba(124,92,252,0.03); }
+  .quiz-option .option-letter {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: rgba(255,255,255,0.04); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+  }
+  .quiz-option.correct { border-color: var(--accent-2); background: rgba(0,212,170,0.08); color: var(--text-primary); }
+  .quiz-option.correct .option-letter { background: var(--accent-2); color: var(--bg-primary); }
+  .quiz-option.wrong { border-color: var(--accent-3); background: rgba(255,107,157,0.08); }
+  .quiz-option.wrong .option-letter { background: var(--accent-3); color: white; }
+  .quiz-option.disabled { pointer-events: none; }
+  .quiz-feedback {
+    margin-top: 16px; padding: 14px 18px; border-radius: var(--radius-xs);
+    font-size: 0.85rem; display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(0,212,170,0.08); color: var(--accent-2); }
+  .quiz-feedback.wrong { background: rgba(255,107,157,0.08); color: var(--accent-3); }
+
+  /* ─── Cheat Sheet ─── */
+  .cheat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .cheat-item {
+    padding: 24px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); transition: all 0.3s ease;
+  }
+  .cheat-item:hover { border-color: var(--border-glow); }
+  .cheat-item .cheat-cmd {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+    color: var(--accent-2); margin-bottom: 8px;
+    padding: 8px 12px; background: var(--bg-code); border-radius: var(--radius-xs);
+  }
+  .cheat-item .cheat-desc { font-size: 0.85rem; color: var(--text-secondary); }
+
+  /* ─── Footer ─── */
+  .footer {
+    text-align: center; padding: 60px 40px 40px;
+    border-top: 1px solid var(--border);
+  }
+  .footer p { color: var(--text-muted); font-size: 0.85rem; }
+  .footer .footer-brand {
+    font-weight: 800; font-size: 1.1rem; color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 768px) {
+    .nav-inner { padding: 0 20px; }
+    .nav-links { display: none; }
+    .hero { padding: 120px 20px 60px; }
+    .hero-stats { gap: 24px; flex-wrap: wrap; }
+    .main-content { padding: 0 20px 80px; }
+    .env-visual { grid-template-columns: 1fr; }
+    .temp-examples { grid-template-columns: 1fr; }
+    .flow-diagram { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+
+  /* ─── Scroll Reveal ─── */
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: all 0.7s cubic-bezier(0.4,0,0.2,1);
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="ambient-bg"></div>
+
+<!-- ═══ Navbar ═══ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="logo-icon">&#x26A1;</div>
+      LangChain Guide
+    </a>
+    <div class="nav-links">
+      <a href="#overview" class="active">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#concepts">Concepts</a>
+      <a href="#temperature">Temperature</a>
+      <a href="#langsmith">LangSmith</a>
+      <a href="#quiz">Quiz</a>
+      <a href="#cheatsheet">Cheat Sheet</a>
+    </div>
+    <div class="nav-progress-wrap"><div class="nav-progress" id="progress-bar"></div></div>
+  </div>
+</nav>
+
+<!-- ═══ Hero ═══ -->
+<section class="hero" id="hero">
+  <div class="hero-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge"><div class="dot"></div> Interactive Learning Dashboard</div>
+    <h1>Master <span class="gradient-text">LangChain</span><br>One Concept at a Time</h1>
+    <p>A visual, interactive guide to every concept you've learned. From prompt templates to LCEL chains — everything in one place.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="value" id="counter-concepts">7</div><div class="label">Core Concepts</div></div>
+      <div class="hero-stat"><div class="value" id="counter-components">5</div><div class="label">Components Used</div></div>
+      <div class="hero-stat"><div class="value" id="counter-lines">42</div><div class="label">Lines of Code</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Main ═══ -->
+<div class="main-content">
+
+  <!-- ─── Section: Project Overview ─── -->
+  <section id="overview">
+    <div class="section-header reveal">
+      <div class="section-number">01 / Overview</div>
+      <h2>What We Built</h2>
+      <p>A LangChain-powered summarizer that takes raw text and produces structured summaries using GPT-5.</p>
+    </div>
+
+    <div class="cards-grid reveal">
+      <div class="card">
+        <div class="card-icon purple">&#x1F4E6;</div>
+        <h3>Project Setup</h3>
+        <p>Python 3.11 project managed with <strong>uv</strong> — the blazing-fast package manager. Dependencies include langchain, langchain-openai, and python-dotenv.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon green">&#x1F512;</div>
+        <h3>Secrets Management</h3>
+        <p>API keys live in a <strong>.env</strong> file, loaded at runtime with <code>load_dotenv()</code>. The file is gitignored so your keys never hit the repo.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon pink">&#x1F916;</div>
+        <h3>AI Integration</h3>
+        <p>Connected to <strong>OpenAI GPT-5</strong> via LangChain's ChatOpenAI wrapper. Also explored local models with Ollama (Gemma, GPT-OSS).</p>
+      </div>
+      <div class="card">
+        <div class="card-icon orange">&#x1F4CA;</div>
+        <h3>Observability</h3>
+        <p><strong>LangSmith</strong> traces every chain run automatically — zero code changes needed. Just set environment variables and monitoring is live.</p>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top: 40px;">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="file-name"><span class="file-dot" style="background:var(--accent-2)"></span> main.py</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+<pre><span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+<span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> <span class="cls">PromptTemplate</span>
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> <span class="cls">ChatOpenAI</span>
+
+load_dotenv()
+
+<span class="kw">def</span> <span class="fn">main</span>():
+    information = <span class="str">"""Elon Reeve Musk... (bio text)"""</span>
+
+    summary_template = <span class="str">"""
+    given the information {information} about a person I want you to create:
+    1. A short summary
+    2. two interesting facts about them
+    """</span>
+
+    summary_prompt_template = <span class="cls">PromptTemplate</span>(
+        input_variables=[<span class="str">"information"</span>],
+        template=summary_template,
+    )
+
+    llm = <span class="cls">ChatOpenAI</span>(model=<span class="str">"gpt-5"</span>, temperature=<span class="num">0</span>)
+    chain = summary_prompt_template <span class="op">|</span> llm
+    response = chain.invoke({<span class="str">"information"</span>: information})
+    <span class="fn">print</span>(response.content)</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Section: Architecture ─── -->
+  <section id="architecture">
+    <div class="section-header reveal">
+      <div class="section-number">02 / Architecture</div>
+      <h2>How the Chain Flows</h2>
+      <p>Data moves left to right through the pipeline — each step transforms it.</p>
+    </div>
+
+    <div class="reveal">
+      <div class="flow-diagram">
+        <div class="flow-node">
+          <div class="node-label">Input</div>
+          <div class="node-value">{"information": "..."}</div>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-node">
+          <div class="node-label">PromptTemplate</div>
+          <div class="node-value">Fill {placeholders}</div>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-node" style="border-color: var(--accent-2);">
+          <div class="node-label">ChatOpenAI</div>
+          <div class="node-value">GPT-5 Processes</div>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-node">
+          <div class="node-label">Output</div>
+          <div class="node-value">response.content</div>
+        </div>
+      </div>
+
+      <div class="callout" style="max-width: 700px; margin: 32px auto;">
+        <div class="callout-title">&#x1F4A1; The Pipe Operator <code style="color:var(--accent-1)">|</code></div>
+        <p>The pipe <code>|</code> is LangChain Expression Language (LCEL). It connects components like an assembly line. Building the chain (<code>template | llm</code>) is laying the tracks. Calling <code>.invoke()</code> sends the train.</p>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top: 40px;">
+      <h3 style="font-size: 1.2rem; margin-bottom: 20px;">Build vs Run — Why Both?</h3>
+      <div class="cards-grid" style="grid-template-columns: repeat(2, 1fr);">
+        <div class="card" style="border-top: 2px solid var(--accent-1);">
+          <h3 style="color: var(--accent-1);">chain = template | llm</h3>
+          <p style="margin-top: 12px;"><strong>Building the pipeline.</strong> No data flows. No API calls. You're connecting the pieces together like blueprints.</p>
+          <div style="margin-top: 16px; padding: 12px 16px; background: var(--bg-code); border-radius: 8px; font-size: 0.82rem; font-family: 'JetBrains Mono', monospace;">
+            <span class="cm">Analogy: Laying down train tracks</span>
+          </div>
+        </div>
+        <div class="card" style="border-top: 2px solid var(--accent-2);">
+          <h3 style="color: var(--accent-2);">chain.invoke(data)</h3>
+          <p style="margin-top: 12px;"><strong>Running the pipeline.</strong> Data flows through each step. API calls happen. You get results back.</p>
+          <div style="margin-top: 16px; padding: 12px 16px; background: var(--bg-code); border-radius: 8px; font-size: 0.82rem; font-family: 'JetBrains Mono', monospace;">
+            <span class="cm">Analogy: Sending the train</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top: 32px;">
+      <h3 style="font-size: 1.2rem; margin-bottom: 20px;">Ways to Run a Chain</h3>
+      <table class="comparison-table">
+        <thead>
+          <tr><th>Method</th><th>What It Does</th><th>Use When</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code style="color:var(--accent-1)">chain.invoke()</code></td><td>Run once, wait for full response</td><td>Single request, need complete answer</td></tr>
+          <tr><td><code style="color:var(--accent-2)">chain.stream()</code></td><td>Get response word-by-word as it generates</td><td>Chat UIs, real-time display</td></tr>
+          <tr><td><code style="color:var(--accent-3)">chain.batch()</code></td><td>Run multiple inputs in parallel</td><td>Processing a list of items at once</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── Section: Core Concepts ─── -->
+  <section id="concepts">
+    <div class="section-header reveal">
+      <div class="section-number">03 / Core Concepts</div>
+      <h2>Deep Dive</h2>
+      <p>Click each concept to expand and understand it fully.</p>
+    </div>
+
+    <div class="tabs-container reveal">
+      <div class="tabs-header">
+        <button class="tab-btn active" onclick="switchTab(event, 'tab-prompt')">PromptTemplate</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-lcel')">LCEL & Pipes</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-llm')">ChatOpenAI</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-env')">Environment</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-runnable')">Runnables</button>
+      </div>
+
+      <!-- Tab: PromptTemplate -->
+      <div id="tab-prompt" class="tab-content active">
+        <div class="cards-grid" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 16px;">What is a PromptTemplate?</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;">
+              A <strong>PromptTemplate</strong> is a reusable instruction sheet with blank slots. The <code>{information}</code> placeholder is like a blank field on a form — you fill it in at runtime with actual data.
+            </p>
+            <div class="callout green" style="margin-top: 20px;">
+              <div class="callout-title">Why not just use f-strings?</div>
+              <p><strong>Safety:</strong> PromptTemplate catches misspelled or missing variables with clear errors.<br>
+              <strong>Reusability:</strong> Same template, different data each time.<br>
+              <strong>Integration:</strong> It's a first-class LangChain citizen that plugs into chains.</p>
+            </div>
+          </div>
+          <div>
+            <div class="code-block">
+              <div class="code-header">
+                <span class="file-name"><span class="file-dot" style="background:var(--accent-4)"></span> PromptTemplate</span>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+<pre><span class="cm"># The template (blank form)</span>
+summary_template = <span class="str">"""
+given the information {information}
+about a person, create:
+1. A short summary
+2. Two interesting facts
+"""</span>
+
+<span class="cm"># Wrap it in PromptTemplate</span>
+prompt = <span class="cls">PromptTemplate</span>(
+    input_variables=[<span class="str">"information"</span>],
+    template=summary_template,
+)
+
+<span class="cm"># Fill it with data (reusable!)</span>
+prompt.invoke({<span class="str">"information"</span>: elon_bio})
+prompt.invoke({<span class="str">"information"</span>: jeff_bio})</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: LCEL -->
+      <div id="tab-lcel" class="tab-content">
+        <h3 style="font-size: 1.15rem; margin-bottom: 16px;">LangChain Expression Language (LCEL)</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">LCEL lets you snap building blocks together with the <code>|</code> pipe. Each block does one job and passes results to the next.</p>
+        <div class="cards-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+          <div class="card" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 12px;">&#x1F4DD;</div>
+            <h3>2-Step Chain</h3>
+            <div class="code-block" style="margin-top: 12px;">
+<pre>prompt <span class="op">|</span> llm</pre>
+            </div>
+            <p style="margin-top: 8px;">Template fills, then AI processes.</p>
+          </div>
+          <div class="card" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 12px;">&#x1F517;</div>
+            <h3>3-Step Chain</h3>
+            <div class="code-block" style="margin-top: 12px;">
+<pre>prompt <span class="op">|</span> llm <span class="op">|</span> parser</pre>
+            </div>
+            <p style="margin-top: 8px;">Add a parser to clean the output.</p>
+          </div>
+          <div class="card" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 12px;">&#x2699;&#xFE0F;</div>
+            <h3>Run It</h3>
+            <div class="code-block" style="margin-top: 12px;">
+<pre>chain.<span class="fn">invoke</span>(data)</pre>
+            </div>
+            <p style="margin-top: 8px;">Send data through the pipeline.</p>
+          </div>
+        </div>
+        <div class="callout" style="margin-top: 24px;">
+          <div class="callout-title">&#x1F3ED; Assembly Line Analogy</div>
+          <p>Each <code>|</code> is a conveyor belt between factory machines. One machine's output becomes the next machine's input. The rule: each piece's output must match the next piece's expected input.</p>
+        </div>
+      </div>
+
+      <!-- Tab: ChatOpenAI -->
+      <div id="tab-llm" class="tab-content">
+        <div class="cards-grid" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 16px;">ChatOpenAI — The AI Brain</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;">
+              <code>ChatOpenAI</code> is LangChain's wrapper around OpenAI's chat models. It handles authentication, retries, and formatting so you don't have to.
+            </p>
+            <div style="margin-top: 20px;">
+              <table class="comparison-table">
+                <thead><tr><th>Parameter</th><th>What It Controls</th></tr></thead>
+                <tbody>
+                  <tr><td><code>model</code></td><td>Which AI model to use (gpt-5, gpt-4o, etc.)</td></tr>
+                  <tr><td><code>temperature</code></td><td>Creativity level (0 = factual, 2 = wild)</td></tr>
+                  <tr><td><code>max_tokens</code></td><td>Maximum length of the response</td></tr>
+                  <tr><td><code>api_key</code></td><td>Override the env variable (optional)</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div class="code-block">
+              <div class="code-header">
+                <span class="file-name"><span class="file-dot" style="background:var(--accent-3)"></span> LLM Setup</span>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+<pre><span class="cm"># OpenAI (cloud-based)</span>
+llm = <span class="cls">ChatOpenAI</span>(
+    model=<span class="str">"gpt-5"</span>,
+    temperature=<span class="num">0</span>
+)
+
+<span class="cm"># Ollama (local, free)</span>
+<span class="cm"># llm = ChatOllama(</span>
+<span class="cm">#     model="gemma3:270m",</span>
+<span class="cm">#     temperature=0</span>
+<span class="cm"># )</span>
+
+<span class="cm"># Use it in a chain</span>
+chain = prompt <span class="op">|</span> llm
+response = chain.<span class="fn">invoke</span>(data)</pre>
+            </div>
+            <div class="callout pink" style="margin-top: 16px;">
+              <div class="callout-title">Cloud vs Local</div>
+              <p><strong>ChatOpenAI</strong> — sends data to OpenAI servers. Powerful but costs money.<br>
+              <strong>ChatOllama</strong> — runs on your machine. Free and private, but needs local setup.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Environment -->
+      <div id="tab-env" class="tab-content">
+        <h3 style="font-size: 1.15rem; margin-bottom: 8px;">Environment Variables</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">Click each variable to learn what it does.</p>
+        <div class="env-visual">
+          <div class="env-file">
+            <div class="env-file-header">&#x1F4C4; .env</div>
+            <div style="padding: 12px 0;">
+              <div class="env-line active" onclick="showEnvInfo(this, 0)"><span class="env-key">OPENAI_API_KEY</span>=<span class="env-val">sk-proj-xxx...</span></div>
+              <div class="env-line" onclick="showEnvInfo(this, 1)"><span class="env-key">LANGSMITH_API_KEY</span>=<span class="env-val">lsv2_pt_xxx...</span></div>
+              <div class="env-line" onclick="showEnvInfo(this, 2)"><span class="env-key">LANGSMITH_ENDPOINT</span>=<span class="env-val">https://api.smith...</span></div>
+              <div class="env-line" onclick="showEnvInfo(this, 3)"><span class="env-key">LANGCHAIN_PROJECT</span>=<span class="env-val">langchain-world</span></div>
+              <div class="env-line" onclick="showEnvInfo(this, 4)"><span class="env-key">LANGCHAIN_TRACING</span>=<span class="env-val">true</span></div>
+            </div>
+          </div>
+          <div class="env-description" id="env-desc">
+            <h4>OPENAI_API_KEY</h4>
+            <p>Your secret key from OpenAI. This authenticates your requests to GPT-5. Get it from <strong>platform.openai.com</strong>.</p>
+            <span class="env-tag required">Required</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Runnables -->
+      <div id="tab-runnable" class="tab-content">
+        <h3 style="font-size: 1.15rem; margin-bottom: 16px;">The Runnable Interface</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">Every LangChain component (prompts, LLMs, parsers) follows the same interface. Each one knows what input it expects and what output it produces.</p>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <h4>PromptTemplate receives a dictionary</h4>
+            <p>It looks at the keys in your dict (<code>{"information": "..."}</code>) and fills in matching <code>{placeholders}</code> in the template.</p>
+            <span class="timeline-tag">Input: dict &rarr; Output: filled prompt</span>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <h4>ChatOpenAI receives a prompt</h4>
+            <p>It takes the completed prompt, sends it to OpenAI's API, and returns the AI's response as a message object.</p>
+            <span class="timeline-tag">Input: prompt &rarr; Output: AI message</span>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <h4>Each component auto-detects its role</h4>
+            <p>You don't tell PromptTemplate to <code>.format()</code> — the Runnable interface does it automatically when data arrives via the pipe.</p>
+            <span class="timeline-tag">Self-aware components</span>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <h4>The pipe connects outputs to inputs</h4>
+            <p>The <code>|</code> operator wires each component's output as the next component's input. If types don't match, you get a clear error.</p>
+            <span class="timeline-tag">Type-safe connections</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Section: Temperature ─── -->
+  <section id="temperature">
+    <div class="section-header reveal">
+      <div class="section-number">04 / Temperature</div>
+      <h2>Creativity Control</h2>
+      <p>Drag the slider to see how temperature affects AI responses.</p>
+    </div>
+
+    <div class="reveal">
+      <div class="temp-visualizer">
+        <div class="temp-slider-wrap">
+          <label>Temperature Setting</label>
+          <div class="temp-value-display" id="temp-display">0.0</div>
+          <input type="range" min="0" max="20" value="0" id="temp-slider" oninput="updateTemp(this.value)">
+          <div style="display: flex; justify-content: space-between; max-width: 500px; margin: 0 auto;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Predictable</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Balanced</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Creative</span>
+          </div>
+        </div>
+
+        <div class="temp-examples" id="temp-examples">
+          <div class="temp-example highlighted" id="temp-low">
+            <div class="temp-label" style="color: var(--accent-2);">0</div>
+            <div class="temp-desc">Factual & Consistent</div>
+            <div class="temp-use">Summaries, code, math</div>
+          </div>
+          <div class="temp-example" id="temp-mid">
+            <div class="temp-label" style="color: var(--accent-1);">0.7</div>
+            <div class="temp-desc">Balanced & Natural</div>
+            <div class="temp-use">Chatbots, emails</div>
+          </div>
+          <div class="temp-example" id="temp-high">
+            <div class="temp-label" style="color: var(--accent-3);">1.5+</div>
+            <div class="temp-desc">Creative & Wild</div>
+            <div class="temp-use">Brainstorming, stories</div>
+          </div>
+        </div>
+
+        <div class="temp-output" id="temp-output">
+          <strong style="color: var(--accent-2);">Prompt:</strong> "Name a fruit"<br>
+          <strong style="color: var(--text-primary);">Response:</strong> <span id="temp-response">Apple. Apple. Apple. (Always the same answer)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Section: LangSmith ─── -->
+  <section id="langsmith">
+    <div class="section-header reveal">
+      <div class="section-number">05 / LangSmith</div>
+      <h2>Automatic Observability</h2>
+      <p>Zero-code tracing that monitors every chain run behind the scenes.</p>
+    </div>
+
+    <div class="reveal">
+      <div class="cards-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="card" style="border-top: 2px solid var(--accent-2);">
+          <h3 style="margin-bottom: 16px;">How It Works (Magic Explained)</h3>
+          <div class="timeline" style="padding: 10px 0;">
+            <div class="timeline-item" style="margin-bottom: 24px;">
+              <div class="timeline-dot"></div>
+              <h4 style="font-size: 0.9rem;"><code>load_dotenv()</code> loads env vars</h4>
+              <p>LangSmith config enters the environment.</p>
+            </div>
+            <div class="timeline-item" style="margin-bottom: 24px;">
+              <div class="timeline-dot"></div>
+              <h4 style="font-size: 0.9rem;">LangChain checks: is tracing enabled?</h4>
+              <p>Reads <code>LANGCHAIN_TRACING=true</code>. If yes, background tracker turns on.</p>
+            </div>
+            <div class="timeline-item" style="margin-bottom: 24px;">
+              <div class="timeline-dot"></div>
+              <h4 style="font-size: 0.9rem;">Tracker records everything silently</h4>
+              <p>Prompts, responses, timing, tokens — all captured automatically.</p>
+            </div>
+            <div class="timeline-item" style="margin-bottom: 0;">
+              <div class="timeline-dot"></div>
+              <h4 style="font-size: 0.9rem;">Data sent to LangSmith dashboard</h4>
+              <p>Uses your API key and endpoint to upload traces.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="border-top: 2px solid var(--accent-1);">
+          <h3 style="margin-bottom: 16px;">The Secret: <code>get_env_var()</code></h3>
+          <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">LangSmith accepts <strong>both</strong> <code>LANGSMITH_</code> and <code>LANGCHAIN_</code> prefixes. Here's the actual code:</p>
+          <div class="code-block" style="margin: 0;">
+            <div class="code-header">
+              <span class="file-name"><span class="file-dot" style="background:var(--accent-1)"></span> langsmith/utils.py</span>
+            </div>
+<pre><span class="kw">def</span> <span class="fn">get_env_var</span>(
+    name,
+    namespaces=(<span class="str">"LANGSMITH"</span>, <span class="str">"LANGCHAIN"</span>)
+):
+    <span class="cm"># Checks LANGSMITH_ENDPOINT first</span>
+    <span class="cm"># Falls back to LANGCHAIN_ENDPOINT</span>
+    <span class="kw">for</span> ns <span class="kw">in</span> namespaces:
+        value = os.environ.get(
+            <span class="str">f"</span>{ns}_{name}<span class="str">"</span>
+        )
+        <span class="kw">if</span> value:
+            <span class="kw">return</span> value</pre>
+          </div>
+          <div class="callout" style="margin-top: 16px; margin-bottom: 0;">
+            <div class="callout-title">Backward Compatibility</div>
+            <p>LangSmith was once part of LangChain, so old <code>LANGCHAIN_</code> variables still work. New preferred prefix is <code>LANGSMITH_</code>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Section: Quiz ─── -->
+  <section id="quiz">
+    <div class="section-header reveal">
+      <div class="section-number">06 / Test Yourself</div>
+      <h2>Quick Quiz</h2>
+      <p>See how well you've absorbed the concepts.</p>
+    </div>
+
+    <div class="reveal">
+      <div class="quiz-card" id="quiz-1">
+        <h4><span class="q-num">1</span> What does the <code>|</code> pipe operator do in LCEL?</h4>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-1')">
+            <span class="option-letter">A</span> Runs both sides in parallel
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, true, 'quiz-1')">
+            <span class="option-letter">B</span> Connects the output of the left to the input of the right
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-1')">
+            <span class="option-letter">C</span> Combines two prompts into one
+          </div>
+        </div>
+        <div class="quiz-feedback" id="quiz-1-feedback"></div>
+      </div>
+
+      <div class="quiz-card" id="quiz-2">
+        <h4><span class="q-num">2</span> What does <code>temperature=0</code> mean?</h4>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-2')">
+            <span class="option-letter">A</span> The model is turned off
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-2')">
+            <span class="option-letter">B</span> Maximum creativity and randomness
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, true, 'quiz-2')">
+            <span class="option-letter">C</span> Most predictable and factual responses
+          </div>
+        </div>
+        <div class="quiz-feedback" id="quiz-2-feedback"></div>
+      </div>
+
+      <div class="quiz-card" id="quiz-3">
+        <h4><span class="q-num">3</span> How does LangSmith trace your chain runs?</h4>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-3')">
+            <span class="option-letter">A</span> You must add tracing code to each chain
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, true, 'quiz-3')">
+            <span class="option-letter">B</span> Automatically via environment variables — zero code changes
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-3')">
+            <span class="option-letter">C</span> It only works with a paid LangSmith plan
+          </div>
+        </div>
+        <div class="quiz-feedback" id="quiz-3-feedback"></div>
+      </div>
+
+      <div class="quiz-card" id="quiz-4">
+        <h4><span class="q-num">4</span> Why use PromptTemplate instead of f-strings?</h4>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-4')">
+            <span class="option-letter">A</span> f-strings don't work in Python 3.11
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, true, 'quiz-4')">
+            <span class="option-letter">B</span> Input validation, reusability, and LangChain integration
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-4')">
+            <span class="option-letter">C</span> PromptTemplates are faster to execute
+          </div>
+        </div>
+        <div class="quiz-feedback" id="quiz-4-feedback"></div>
+      </div>
+
+      <div class="quiz-card" id="quiz-5">
+        <h4><span class="q-num">5</span> What's the difference between <code>chain = a | b</code> and <code>chain.invoke(data)</code>?</h4>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="checkAnswer(this, true, 'quiz-5')">
+            <span class="option-letter">A</span> Building the pipeline vs. running it
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-5')">
+            <span class="option-letter">B</span> They do the same thing
+          </div>
+          <div class="quiz-option" onclick="checkAnswer(this, false, 'quiz-5')">
+            <span class="option-letter">C</span> One is sync, the other is async
+          </div>
+        </div>
+        <div class="quiz-feedback" id="quiz-5-feedback"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Section: Cheat Sheet ─── -->
+  <section id="cheatsheet">
+    <div class="section-header reveal">
+      <div class="section-number">07 / Quick Reference</div>
+      <h2>Cheat Sheet</h2>
+      <p>Copy-paste ready snippets for everyday use.</p>
+    </div>
+
+    <div class="cheat-grid reveal">
+      <div class="cheat-item">
+        <div class="cheat-cmd">uv add langchain langchain-openai</div>
+        <div class="cheat-desc">Install LangChain and the OpenAI integration package.</div>
+      </div>
+      <div class="cheat-item">
+        <div class="cheat-cmd">uv run python main.py</div>
+        <div class="cheat-desc">Run your script using uv's managed Python environment.</div>
+      </div>
+      <div class="cheat-item">
+        <div class="cheat-cmd">uv run black .</div>
+        <div class="cheat-desc">Format all Python files in the project (note the space before the dot).</div>
+      </div>
+      <div class="cheat-item">
+        <div class="cheat-cmd">load_dotenv()</div>
+        <div class="cheat-desc">Load environment variables from .env file into the program.</div>
+      </div>
+      <div class="cheat-item">
+        <div class="cheat-cmd">chain = prompt | llm</div>
+        <div class="cheat-desc">Connect a prompt template to an LLM using the LCEL pipe operator.</div>
+      </div>
+      <div class="cheat-item">
+        <div class="cheat-cmd">chain.invoke({"key": value})</div>
+        <div class="cheat-desc">Run the chain with input data. Data flows through each pipe stage.</div>
+      </div>
+      <div class="cheat-item">
+        <div class="cheat-cmd">LANGCHAIN_TRACING=true</div>
+        <div class="cheat-desc">Enable automatic LangSmith tracing via environment variable.</div>
+      </div>
+      <div class="cheat-item">
+        <div class="cheat-cmd">ChatOpenAI(model="gpt-5", temperature=0)</div>
+        <div class="cheat-desc">Create an OpenAI LLM instance with predictable, factual output.</div>
+      </div>
+      <div class="cheat-item">
+        <div class="cheat-cmd">response.content</div>
+        <div class="cheat-desc">Access the text content from the AI's response message.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══ Footer ═══ -->
+<footer class="footer">
+  <div class="footer-brand">LangChain Learning Dashboard</div>
+  <p>Built with curiosity. Powered by LangChain + GPT-5.</p>
+  <p style="margin-top: 8px; font-size: 0.75rem;">Sarthak Singh Negi &middot; 2026</p>
+</footer>
+
+<script>
+// ─── Scroll Progress Bar ───
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = (scrollTop / docHeight) * 100;
+  document.getElementById('progress-bar').style.width = progress + '%';
+
+  const navbar = document.getElementById('navbar');
+  navbar.classList.toggle('scrolled', scrollTop > 50);
+
+  // Active nav link
+  const sections = document.querySelectorAll('section[id]');
+  sections.forEach(sec => {
+    const top = sec.offsetTop - 120;
+    const bottom = top + sec.offsetHeight;
+    const link = document.querySelector(`.nav-links a[href="#${sec.id}"]`);
+    if (link) link.classList.toggle('active', scrollTop >= top && scrollTop < bottom);
+  });
+});
+
+// ─── Scroll Reveal ───
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ─── Tabs ───
+function switchTab(e, tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// ─── Copy Code ───
+function copyCode(btn) {
+  const code = btn.closest('.code-block').querySelector('pre').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ─── Environment Variable Info ───
+const envInfo = [
+  { title: 'OPENAI_API_KEY', desc: 'Your secret key from OpenAI. This authenticates your requests to GPT-5. Get it from <strong>platform.openai.com/api-keys</strong>. Never commit this to git.', tag: 'required' },
+  { title: 'LANGSMITH_API_KEY', desc: 'Authentication key for LangSmith tracing. Get it from your LangSmith dashboard settings. Enables trace uploads.', tag: 'optional' },
+  { title: 'LANGSMITH_ENDPOINT', desc: 'The API URL for LangSmith. Use <strong>https://api.smith.langchain.com</strong> for US region. LangSmith also accepts <code>LANGCHAIN_ENDPOINT</code> (backward compatible).', tag: 'optional' },
+  { title: 'LANGCHAIN_PROJECT', desc: 'The project name in LangSmith where traces are grouped. Shows up as a folder in your dashboard. Defaults to "default" if not set.', tag: 'optional' },
+  { title: 'LANGCHAIN_TRACING', desc: 'The master switch. Set to <strong>true</strong> to enable automatic tracing. Remove it or set to false to disable. Zero code changes needed.', tag: 'optional' },
+];
+
+function showEnvInfo(el, idx) {
+  document.querySelectorAll('.env-line').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+  const info = envInfo[idx];
+  document.getElementById('env-desc').innerHTML = `
+    <h4>${info.title}</h4>
+    <p>${info.desc}</p>
+    <span class="env-tag ${info.tag}">${info.tag === 'required' ? 'Required' : 'Optional'}</span>
+  `;
+}
+
+// ─── Temperature Slider ───
+const tempResponses = [
+  'Apple. Apple. Apple. (Always the same, most likely answer)',
+  'Apple. Apple. Apple. (Still very predictable)',
+  'Apple. Sometimes Banana. (Slight variety)',
+  'Apple, Banana, or Orange. (More options considered)',
+  'Banana, Mango, or Strawberry. (Nice variety)',
+  'Mango, Kiwi, or Blueberry. (Getting creative)',
+  'Kiwi, Pomegranate, or Lychee. (Exploring further)',
+  'Starfruit, Persimmon, or Guava. (Interesting picks)',
+  'Dragonfruit! Or maybe Passion fruit. (Surprising)',
+  'Jackfruit, Durian, or Rambutan! (Very adventurous)',
+  'Cloudberry?? Miracle fruit?! (Going wild)',
+  'Monstera Deliciosa... technically edible! (Unexpected)',
+  'A fruit from my imagination... Sunpear! (Making things up)',
+  'Glorpberry from Planet Zeta-9. (Pure fiction)',
+  'BANANACADO — half banana, half avocado!! (Chaos)',
+  '🎲 Quantum Fruit — exists in all states simultaneously',
+  '404 FRUIT NOT FOUND — consciousness is a melon',
+  'The color purple tastes like Tuesdays 🌀 (Broken)',
+  'asjkdfh fruit Lorem BANANA ipsum dolor (Gibberish)',
+  'I AM THE FRUIT. THE FRUIT IS ME. ALL IS FRUIT.',
+  '💥 *explodes into confetti and tropical seeds* 💥',
+];
+
+function updateTemp(val) {
+  const temp = (val / 10).toFixed(1);
+  document.getElementById('temp-display').textContent = temp;
+  document.getElementById('temp-response').textContent = tempResponses[val] || tempResponses[0];
+
+  const low = document.getElementById('temp-low');
+  const mid = document.getElementById('temp-mid');
+  const high = document.getElementById('temp-high');
+  low.classList.toggle('highlighted', val <= 3);
+  mid.classList.toggle('highlighted', val > 3 && val <= 10);
+  high.classList.toggle('highlighted', val > 10);
+
+  const display = document.getElementById('temp-display');
+  if (val <= 3) display.style.background = 'linear-gradient(135deg, #00d4aa, #4dc9f6)';
+  else if (val <= 10) display.style.background = 'var(--gradient-1)';
+  else display.style.background = 'var(--gradient-2)';
+  display.style.webkitBackgroundClip = 'text';
+  display.style.backgroundClip = 'text';
+}
+
+// ─── Quiz ───
+function checkAnswer(el, isCorrect, quizId) {
+  const card = document.getElementById(quizId);
+  const options = card.querySelectorAll('.quiz-option');
+  const feedback = document.getElementById(quizId + '-feedback');
+
+  options.forEach(o => { o.classList.add('disabled'); o.classList.remove('correct', 'wrong'); });
+
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '✓ Correct! You got it.';
+  } else {
+    el.classList.add('wrong');
+    options.forEach(o => { if (!o.classList.contains('wrong')) { /* find correct */ } });
+    feedback.className = 'quiz-feedback show wrong';
+    feedback.textContent = '✗ Not quite. Review the concept above and try to understand why.';
+    options.forEach(opt => {
+      opt.addEventListener('click', () => {}, { once: true });
+    });
+  }
+}
+
+// ─── Counter Animation ───
+function animateCounter(el, target) {
+  let current = 0;
+  const step = Math.max(1, Math.floor(target / 30));
+  const timer = setInterval(() => {
+    current += step;
+    if (current >= target) { current = target; clearInterval(timer); }
+    el.textContent = current;
+  }, 30);
+}
+
+const heroObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      animateCounter(document.getElementById('counter-concepts'), 7);
+      animateCounter(document.getElementById('counter-components'), 5);
+      animateCounter(document.getElementById('counter-lines'), 42);
+      heroObserver.disconnect();
+    }
+  });
+}, { threshold: 0.5 });
+heroObserver.observe(document.querySelector('.hero-stats'));
+</script>
+
+</body>
+</html>
